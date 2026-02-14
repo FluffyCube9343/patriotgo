@@ -1,0 +1,22 @@
+service: carpool-api
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: us-east-1
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - dynamodb:PutItem
+          Resource: arn:aws:dynamodb:us-east-1:766092484671:table/Users
+
+functions:
+  login:
+    handler: auth/login.handler
+    events:
+      - http:
+          path: auth/login
+          method: post
+          cors: true
