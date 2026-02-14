@@ -22,11 +22,16 @@ export default function LoginScreen({ navigation }) {
       
       // FIXED: Added client_id to satisfy the Microsoft request body requirements
       // Replace the zeros with your actual Azure Client ID once you have it
-      const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?` + 
+
+      const authUrl = `https://us-east-1ajdpaxco3.auth.us-east-1.amazoncognito.com/login?response_type=code&client_id=4qqigiekfgl525le0qmb3ub05h&redirect_uri=https%3A%2F%2Fd84l1y8p4kdic.cloudfront.net&identity_provider=Microsoft&scope=openid%20profile%20email`
+
+
+      
+      /*const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?` + 
                       `client_id=00000000-0000-0000-0000-000000000000` + 
                       `&response_type=code` + 
                       `&redirect_uri=${encodeURIComponent(redirectUrl)}` + 
-                      `&scope=openid%20profile%20email`;
+                      `&scope=openid%20profile%20email`;*/
 
       const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUrl);
 
