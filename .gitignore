@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+
+# Env files
+.env
+
+# Expo / Metro cache
+.expo/
+.expo-shared/
+*.expo.dev.json
+*.expo.local.json
+
+# OS junk
+.DS_Store
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

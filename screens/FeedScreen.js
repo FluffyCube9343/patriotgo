@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View, FlatList, Image, TouchableOpacity, SafeAreaView, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 
 const DRIVERS = [
   { id: '1', name: 'SAUMIT G.', major: 'CS MAJOR', credits: '40', car: 'Tesla', dist: '3.2 mi away' },
@@ -8,6 +9,8 @@ const DRIVERS = [
 ];
 
 export default function FeedScreen() {
+  const navigation = useNavigation();
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header with Custom Logo Style */}
@@ -47,7 +50,16 @@ export default function FeedScreen() {
             
             <View style={styles.cardFooter}>
               <Text style={styles.infoText}>{item.dist} • {item.car}</Text>
-              <TouchableOpacity style={styles.goButton}>
+              <TouchableOpacity
+                style={styles.goButton}
+                onPress={() =>
+                  navigation.navigate('ChatList', {
+                    name: item.name,
+                    roomId: `room-${item.id}`,
+                    userId: 'student-demo',
+                  })
+                }
+              >
                 <Text style={styles.goText}>GO</Text>
               </TouchableOpacity>
             </View>
