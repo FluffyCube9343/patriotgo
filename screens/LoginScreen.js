@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   StyleSheet, Text, View, TouchableOpacity, 
   StatusBar, TextInput, KeyboardAvoidingView, Platform, Alert 
@@ -7,57 +7,87 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import * as WebBrowser from 'expo-web-browser';
+import * as AuthSession from 'expo-auth-session';
+
+WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen({ navigation }) {
   const [netID, setNetID] = useState('');
+  const [password, setPassword] = useState('');
 
-  const handleMicrosoftLogin = async () => {
-    // Premium haptic feedback for Mason students
-    if (Platform.OS !== 'web') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    }
+  // 1. Amazon Cognito Discovery Endpoints
+  const discovery = {
+    authorizationEndpoint: 'https://us-east-1ajdpaxco3.auth.us-east-1.amazoncognito.com/login',
+    tokenEndpoint: 'https://us-east-1ajdpaxco3.auth.us-east-1.amazoncognito.com/oauth2/token',
+    revocationEndpoint: 'https://us-east-1ajdpaxco3.auth.us-east-1.amazoncognito.com/oauth2/revoke',
+  };
 
+  // 2. Auth Request Setup
+  const [request, response, promptAsync] = AuthSession.useAuthRequest(
+    {
+      clientId: '4qqigiekfgl525le0qmb3ub05h',
+      scopes: ['email', 'openid', 'phone', 'profile'],
+      redirectUri: 'https://d84l1y8p4kdic.cloudfront.net',
+      responseType: AuthSession.ResponseType.Code,
+    },
+    discovery
+  );
+
+  // 3. Logic to determine user destination
+  const handleUserNavigation = async (authCode) => {
     try {
-      const redirectUrl = WebBrowser.makeRedirectUri({ scheme: 'patriotgo' });
-      
-      // FIXED: Added client_id to satisfy the Microsoft request body requirements
-      // Replace the zeros with your actual Azure Client ID once you have it
+      // TODO: Replace this with an actual API call to your database 
+      // to check if this Mason NetID already has a profile.
+      const isFirstTimeUser = true; // Toggle to false to test direct 'Main' access
 
-      const authUrl = `https://us-east-1ajdpaxco3.auth.us-east-1.amazoncognito.com/login?response_type=code&client_id=4qqigiekfgl525le0qmb3ub05h&redirect_uri=https%3A%2F%2Fd84l1y8p4kdic.cloudfront.net&identity_provider=Microsoft&scope=openid%20profile%20email`
-
-
-      
-      /*const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?` + 
-                      `client_id=00000000-0000-0000-0000-000000000000` + 
-                      `&response_type=code` + 
-                      `&redirect_uri=${encodeURIComponent(redirectUrl)}` + 
-                      `&scope=openid%20profile%20email`;*/
-
-      const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUrl);
-
-      if (result.type === 'success') {
+      if (isFirstTimeUser) {
+        // Send to the screen where you collect major, grad year, etc.
         navigation.navigate('SignUp');
+      } else {
+        // Returning user goes straight to the home/dashboard
+        navigation.replace('Main');
       }
     } catch (error) {
-      // DEVELOPMENT BYPASS: This lets you skip the broken portal during testing
-      Alert.alert(
-        "Auth Mode", 
-        "Bypassing Microsoft Portal for testing. Redirecting to Profile Setup.",
-        [{ text: "Continue", onPress: () => navigation.navigate('SignUp') }]
-      );
+      Alert.alert("Navigation Error", "We couldn't determine your account status.");
     }
   };
 
+  useEffect(() => {
+    if (response?.type === 'success') {
+      const { code } = response.params;
+      console.log('Cognito Login Success! Code:', code);
+      
+      // Execute the navigation logic
+      handleUserNavigation(code);
+    } else if (response?.type === 'error') {
+      Alert.alert("Authentication Error", response.error.message);
+    }
+  }, [response]);
+
+  const handleSSOLogin = () => {
+    if (request) {
+      if (Platform.OS !== 'web') {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      }
+      promptAsync();
+    }
+  };
+
+  const handleManualLogin = () => {
+    if (netID.trim().length === 0) {
+      Alert.alert("NetID Required", "Please enter your Mason NetID.");
+      return;
+    }
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    // For manual login, we assume a returning user for this demo
+    navigation.replace('Main');
+  };
+
   return (
-    <KeyboardAvoidingView 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
-      style={styles.container}
-    >
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
       <StatusBar barStyle="light-content" />
       <LinearGradient colors={['#006633', '#004D26', '#002211']} style={styles.fullBg}>
-        
         <View style={styles.content}>
-          {/* Brand Header */}
           <View style={styles.topSection}>
             <Text style={styles.preTitle}>SECURE ACCESS</Text>
             <View style={styles.logoRow}>
@@ -66,22 +96,20 @@ export default function LoginScreen({ navigation }) {
             </View>
           </View>
 
-          {/* Login Actions */}
           <View style={styles.formContainer}>
-            <TouchableOpacity style={styles.microsoftBtn} onPress={handleMicrosoftLogin}>
-              <View style={styles.msInner}>
-                <MaterialCommunityIcons name="microsoft" size={20} color="#FFF" />
-                <Text style={styles.microsoftText}>SIGN IN WITH MASON EMAIL</Text>
+            <TouchableOpacity style={styles.ssoBtn} onPress={handleSSOLogin}>
+              <View style={styles.innerBtn}>
+                <MaterialCommunityIcons name="shield-account" size={22} color="#FFF" />
+                <Text style={styles.ssoText}>SIGN IN WITH MASON SSO</Text>
               </View>
             </TouchableOpacity>
 
             <View style={styles.dividerRow}>
               <View style={styles.line} />
-              <Text style={styles.dividerText}>OR LOGIN WITH NETID</Text>
+              <Text style={styles.dividerText}>OR NETID</Text>
               <View style={styles.line} />
             </View>
 
-            {/* Glassmorphism NetID Input */}
             <View style={styles.inputBox}>
               <MaterialCommunityIcons name="account-outline" size={20} color="rgba(255,255,255,0.6)" />
               <TextInput 
@@ -95,15 +123,20 @@ export default function LoginScreen({ navigation }) {
               <Text style={styles.emailSuffix}>@gmu.edu</Text>
             </View>
 
-            {/* Primary Action Button */}
-            <TouchableOpacity 
-              style={styles.loginBtn} 
-              onPress={() => navigation.replace('Main')}
-            >
-              <LinearGradient 
-                colors={['#FFCC33', '#EBB700']} 
-                style={styles.btnGradient}
-              >
+            <View style={[styles.inputBox, { marginTop: 15 }]}>
+              <MaterialCommunityIcons name="lock-outline" size={20} color="rgba(255,255,255,0.6)" />
+              <TextInput 
+                style={styles.input}
+                placeholder="Password"
+                placeholderTextColor="rgba(255,255,255,0.3)"
+                secureTextEntry
+                value={password}
+                onChangeText={setPassword}
+              />
+            </View>
+
+            <TouchableOpacity style={styles.loginBtn} onPress={handleManualLogin}>
+              <LinearGradient colors={['#FFCC33', '#EBB700']} start={{x: 0, y: 0}} end={{x: 1, y: 0}} style={styles.btnGradient}>
                 <Text style={styles.loginText}>CONTINUE</Text>
                 <MaterialCommunityIcons name="arrow-right" size={20} color="#004D26" />
               </LinearGradient>
@@ -125,29 +158,13 @@ const styles = StyleSheet.create({
   logoText: { fontSize: 42, fontWeight: '300', color: '#FFF', letterSpacing: -1 },
   goldText: { fontWeight: '800', color: '#FFCC33' },
   formContainer: { width: '100%' },
-  microsoftBtn: { 
-    height: 56, 
-    borderRadius: 18, 
-    backgroundColor: 'rgba(255,255,255,0.05)', 
-    borderWidth: 1, 
-    borderColor: 'rgba(255,255,255,0.1)', 
-    justifyContent: 'center' 
-  },
-  msInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
-  microsoftText: { color: '#FFF', fontSize: 13, fontWeight: '600', letterSpacing: 1, marginLeft: 12 },
+  ssoBtn: { height: 56, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)', justifyContent: 'center' },
+  innerBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+  ssoText: { color: '#FFF', fontSize: 13, fontWeight: '600', letterSpacing: 1, marginLeft: 12 },
   dividerRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 30 },
   line: { flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.1)' },
   dividerText: { color: 'rgba(255,255,255,0.3)', marginHorizontal: 15, fontSize: 9, fontWeight: '700' },
-  inputBox: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    backgroundColor: 'rgba(255,255,255,0.08)', 
-    borderRadius: 16, 
-    height: 56, 
-    paddingHorizontal: 16, 
-    borderWidth: 1, 
-    borderColor: 'rgba(255,255,255,0.1)' 
-  },
+  inputBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 16, height: 56, paddingHorizontal: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
   input: { flex: 1, color: '#FFF', fontSize: 15, marginLeft: 12 },
   emailSuffix: { color: 'rgba(255,255,255,0.4)', fontSize: 14, fontWeight: '600' },
   loginBtn: { marginTop: 25, height: 60, borderRadius: 18, overflow: 'hidden' },
