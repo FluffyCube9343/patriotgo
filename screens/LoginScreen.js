@@ -1,55 +1,151 @@
-import React from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Dimensions, StatusBar } from 'react-native';
+import React, { useState } from 'react';
+import { 
+  StyleSheet, Text, View, TouchableOpacity, 
+  StatusBar, TextInput, KeyboardAvoidingView, Platform, Alert 
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import * as WebBrowser from 'expo-web-browser';
 
 export default function LoginScreen({ navigation }) {
-  const handleLogin = () => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    navigation.navigate('Main');
+  const [netID, setNetID] = useState('');
+
+  const handleMicrosoftLogin = async () => {
+    // Premium haptic feedback for Mason students
+    if (Platform.OS !== 'web') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }
+
+    try {
+      const redirectUrl = WebBrowser.makeRedirectUri({ scheme: 'patriotgo' });
+      
+      // FIXED: Added client_id to satisfy the Microsoft request body requirements
+      // Replace the zeros with your actual Azure Client ID once you have it
+      const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?` + 
+                      `client_id=00000000-0000-0000-0000-000000000000` + 
+                      `&response_type=code` + 
+                      `&redirect_uri=${encodeURIComponent(redirectUrl)}` + 
+                      `&scope=openid%20profile%20email`;
+
+      const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUrl);
+
+      if (result.type === 'success') {
+        navigation.navigate('SignUp');
+      }
+    } catch (error) {
+      // DEVELOPMENT BYPASS: This lets you skip the broken portal during testing
+      Alert.alert(
+        "Auth Mode", 
+        "Bypassing Microsoft Portal for testing. Redirecting to Profile Setup.",
+        [{ text: "Continue", onPress: () => navigation.navigate('SignUp') }]
+      );
+    }
   };
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+      style={styles.container}
+    >
       <StatusBar barStyle="light-content" />
-      <LinearGradient colors={['#004D26', '#006633', '#002211']} style={styles.fullBg}>
-        <View style={styles.goldGlow} />
+      <LinearGradient colors={['#006633', '#004D26', '#002211']} style={styles.fullBg}>
         
-        <View style={styles.topSection}>
-          <Text style={styles.preTitle}>WELCOME TO</Text>
-          <Text style={styles.logoText}>PATRIOT<Text style={styles.goldText}>GO</Text></Text>
-          <View style={styles.accentLine} />
-          <Text style={styles.tagline}>SUSTAINABLE. SOCIAL. SEAMLESS.</Text>
-        </View>
+        <View style={styles.content}>
+          {/* Brand Header */}
+          <View style={styles.topSection}>
+            <Text style={styles.preTitle}>SECURE ACCESS</Text>
+            <View style={styles.logoRow}>
+              <Text style={styles.logoText}>PATRIOT</Text>
+              <Text style={[styles.logoText, styles.goldText]}>GO</Text>
+            </View>
+          </View>
 
-        <View style={styles.bottomSection}>
-          <TouchableOpacity activeOpacity={0.9} style={styles.loginBtn} onPress={handleLogin}>
-            <LinearGradient colors={['#FFCC33', '#E6B82E']} style={styles.btnGradient}>
-              <Text style={styles.loginText}>START COMMUTING</Text>
-              <MaterialCommunityIcons name="chevron-right" size={24} color="#006633" />
-            </LinearGradient>
-          </TouchableOpacity>
-          <Text style={styles.footerNote}>Exclusive to George Mason Students</Text>
+          {/* Login Actions */}
+          <View style={styles.formContainer}>
+            <TouchableOpacity style={styles.microsoftBtn} onPress={handleMicrosoftLogin}>
+              <View style={styles.msInner}>
+                <MaterialCommunityIcons name="microsoft" size={20} color="#FFF" />
+                <Text style={styles.microsoftText}>SIGN IN WITH MASON EMAIL</Text>
+              </View>
+            </TouchableOpacity>
+
+            <View style={styles.dividerRow}>
+              <View style={styles.line} />
+              <Text style={styles.dividerText}>OR LOGIN WITH NETID</Text>
+              <View style={styles.line} />
+            </View>
+
+            {/* Glassmorphism NetID Input */}
+            <View style={styles.inputBox}>
+              <MaterialCommunityIcons name="account-outline" size={20} color="rgba(255,255,255,0.6)" />
+              <TextInput 
+                style={styles.input}
+                placeholder="NetID"
+                placeholderTextColor="rgba(255,255,255,0.3)"
+                value={netID}
+                onChangeText={setNetID}
+                autoCapitalize="none"
+              />
+              <Text style={styles.emailSuffix}>@gmu.edu</Text>
+            </View>
+
+            {/* Primary Action Button */}
+            <TouchableOpacity 
+              style={styles.loginBtn} 
+              onPress={() => navigation.replace('Main')}
+            >
+              <LinearGradient 
+                colors={['#FFCC33', '#EBB700']} 
+                style={styles.btnGradient}
+              >
+                <Text style={styles.loginText}>CONTINUE</Text>
+                <MaterialCommunityIcons name="arrow-right" size={20} color="#004D26" />
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
         </View>
       </LinearGradient>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  fullBg: { flex: 1, padding: 40, justifyContent: 'space-between', paddingVertical: 100 },
-  goldGlow: { position: 'absolute', top: -50, right: -50, width: 250, height: 250, borderRadius: 125, backgroundColor: 'rgba(255,204,51,0.1)' },
-  topSection: { marginTop: 20 },
-  preTitle: { color: '#FFCC33', fontSize: 14, fontWeight: '800', letterSpacing: 4 },
-  logoText: { fontSize: 56, fontWeight: '900', color: '#FFF', letterSpacing: -3, fontStyle: 'italic', marginTop: 10 },
-  goldText: { color: '#FFCC33' },
-  accentLine: { width: 50, height: 6, backgroundColor: '#FFCC33', marginVertical: 20, borderRadius: 3 },
-  tagline: { fontSize: 12, color: '#FFF', opacity: 0.7, letterSpacing: 2, fontWeight: '600' },
-  bottomSection: { alignItems: 'center' },
-  loginBtn: { width: '100%', height: 70, borderRadius: 22, overflow: 'hidden' },
-  btnGradient: { flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 10 },
-  loginText: { color: '#006633', fontWeight: '900', fontSize: 18, letterSpacing: 1 },
-  footerNote: { color: 'rgba(255,255,255,0.4)', marginTop: 20, fontSize: 12, fontWeight: '600' }
+  fullBg: { flex: 1 },
+  content: { flex: 1, paddingHorizontal: 35, justifyContent: 'center' },
+  topSection: { marginBottom: 40 },
+  preTitle: { color: '#FFCC33', fontSize: 10, fontWeight: '800', letterSpacing: 4, marginBottom: 8 },
+  logoRow: { flexDirection: 'row', alignItems: 'baseline' },
+  logoText: { fontSize: 42, fontWeight: '300', color: '#FFF', letterSpacing: -1 },
+  goldText: { fontWeight: '800', color: '#FFCC33' },
+  formContainer: { width: '100%' },
+  microsoftBtn: { 
+    height: 56, 
+    borderRadius: 18, 
+    backgroundColor: 'rgba(255,255,255,0.05)', 
+    borderWidth: 1, 
+    borderColor: 'rgba(255,255,255,0.1)', 
+    justifyContent: 'center' 
+  },
+  msInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+  microsoftText: { color: '#FFF', fontSize: 13, fontWeight: '600', letterSpacing: 1, marginLeft: 12 },
+  dividerRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 30 },
+  line: { flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.1)' },
+  dividerText: { color: 'rgba(255,255,255,0.3)', marginHorizontal: 15, fontSize: 9, fontWeight: '700' },
+  inputBox: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    backgroundColor: 'rgba(255,255,255,0.08)', 
+    borderRadius: 16, 
+    height: 56, 
+    paddingHorizontal: 16, 
+    borderWidth: 1, 
+    borderColor: 'rgba(255,255,255,0.1)' 
+  },
+  input: { flex: 1, color: '#FFF', fontSize: 15, marginLeft: 12 },
+  emailSuffix: { color: 'rgba(255,255,255,0.4)', fontSize: 14, fontWeight: '600' },
+  loginBtn: { marginTop: 25, height: 60, borderRadius: 18, overflow: 'hidden' },
+  btnGradient: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+  loginText: { color: '#004D26', fontSize: 15, fontWeight: '800', letterSpacing: 1, marginRight: 10 },
 });
