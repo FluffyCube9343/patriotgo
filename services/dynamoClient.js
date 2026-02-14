@@ -28,3 +28,4 @@ export const chatTableName = awsConfig.tableName;
 export const isDynamoEnabled = awsConfig.enabled;
 export const dynamoRegion = awsConfig.region;
 export const dynamoEndpoint = awsConfig.endpoint;
+export const ridesTableName = awsConfig.ridesTableName;

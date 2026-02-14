@@ -57,6 +57,17 @@ export default function ChatScreen({ route, navigation }) {
     };
   }, [roomId]);
 
+  // Lightweight polling to keep the chat feeling real-time during the hackathon.
+  useEffect(() => {
+    if (!isDynamoEnabled) return undefined;
+
+    const intervalId = setInterval(() => {
+      loadMessages();
+    }, 2500);
+
+    return () => clearInterval(intervalId);
+  }, [roomId, isDynamoEnabled]);
+
   const loadMessages = async (cancelled = false) => {
     setLoading(true);
     setError('');

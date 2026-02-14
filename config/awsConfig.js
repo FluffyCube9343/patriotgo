@@ -11,6 +11,7 @@ const awsConfig = {
   enabled: process.env.EXPO_PUBLIC_ENABLE_DYNAMO === 'true',
   region: process.env.EXPO_PUBLIC_AWS_REGION || 'us-east-1',
   tableName: process.env.EXPO_PUBLIC_CHAT_TABLE || 'PatriotGoChatMessages',
+  ridesTableName: process.env.EXPO_PUBLIC_RIDES_TABLE || 'PatriotGoRides',
   endpoint: process.env.EXPO_PUBLIC_DYNAMO_ENDPOINT,
   // Client-side credentials are not recommended. Prefer Cognito/Federation.
   // These are provided only for development/local testing.

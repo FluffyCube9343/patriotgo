@@ -6,15 +6,24 @@ import {
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../lib/supabase'; // Connected to your lib/supabase.js
+import { getWalletBalance } from '../services/creditEngine';
 
 const { width } = Dimensions.get('window');
 
 export default function ProfileScreen() {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [metrics, setMetrics] = useState({
+    credits: 450,
+    co2SavedKg: 12.4,
+    gallonsSaved: 4.1,
+    ridesShared: 24,
+    semesterProjection: 85,
+  });
 
   useEffect(() => {
     fetchProfile();
+    loadWallet();
   }, []);
 
   const fetchProfile = async () => {
@@ -35,6 +44,18 @@ export default function ProfileScreen() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadWallet = () => {
+    // Demo wallet balance from creditEngine (in-memory). Falls back to static value.
+    const balance = getWalletBalance('student-demo') || 450;
+    // Simple projections for hackathon demo; replace with real queries later.
+    const projected = Math.round(metrics.co2SavedKg * 6.5);
+    setMetrics((prev) => ({
+      ...prev,
+      credits: balance,
+      semesterProjection: projected,
+    }));
   };
 
   if (loading) {
@@ -79,20 +100,36 @@ export default function ProfileScreen() {
         {/* IMPACT BENTO GRID */}
         <View style={styles.bentoGrid}>
           <LinearGradient colors={['#006633', '#004D26']} style={styles.mainStatCard}>
-            <Text style={styles.statNumber}>450</Text>
+            <Text style={styles.statNumber}>{metrics.credits}</Text>
             <Text style={styles.statLabel}>TOTAL CREDITS</Text>
           </LinearGradient>
           
           <View style={styles.rightStats}>
             <View style={styles.smallStatCard}>
-              <Text style={styles.smallStatNumber}>12.4</Text>
+              <Text style={styles.smallStatNumber}>{metrics.co2SavedKg}</Text>
               <Text style={styles.smallStatLabel}>KG CO2 SAVED</Text>
             </View>
             <View style={styles.smallStatCard}>
-              <Text style={styles.smallStatNumber}>24</Text>
+              <Text style={styles.smallStatNumber}>{metrics.ridesShared}</Text>
               <Text style={styles.smallStatLabel}>RIDES SHARED</Text>
             </View>
           </View>
+        </View>
+
+        {/* SUSTAINABILITY + PROJECTION */}
+        <View style={styles.section}>
+          <Text style={styles.sectionHeader}>IMPACT</Text>
+          <View style={styles.impactRow}>
+            <View style={styles.impactCard}>
+              <Text style={styles.impactLabel}>Gallons Saved</Text>
+              <Text style={styles.impactValue}>{metrics.gallonsSaved}</Text>
+            </View>
+            <View style={styles.impactCard}>
+              <Text style={styles.impactLabel}>Semester CO₂ Projection</Text>
+              <Text style={styles.impactValue}>{metrics.semesterProjection} kg</Text>
+            </View>
+          </View>
+          <Text style={styles.impactNote}>Projection assumes your recent pace; replace with real calculations from ride history.</Text>
         </View>
 
         {/* ABOUT SECTION */}
@@ -162,5 +199,10 @@ const styles = StyleSheet.create({
   settingText: { marginLeft: 15, fontSize: 15, fontWeight: '700', color: '#1A1A1A' },
   
   dangerBtn: { marginTop: 10, marginHorizontal: 25, padding: 20, alignItems: 'center', borderRadius: 20, backgroundColor: '#FFF0F0' },
-  dangerText: { color: '#FF4444', fontWeight: '900', letterSpacing: 2, fontSize: 11 }
+  dangerText: { color: '#FF4444', fontWeight: '900', letterSpacing: 2, fontSize: 11 },
+  impactRow: { flexDirection: 'row', gap: 12 },
+  impactCard: { flex: 1, backgroundColor: '#F8F8F8', padding: 16, borderRadius: 18, borderWidth: 1, borderColor: '#EFEFEF' },
+  impactLabel: { fontSize: 11, fontWeight: '800', color: '#777', letterSpacing: 0.5, marginBottom: 6 },
+  impactValue: { fontSize: 18, fontWeight: '900', color: '#1A1A1A' },
+  impactNote: { marginTop: 8, color: '#777', fontSize: 12, fontWeight: '600' }
 });
