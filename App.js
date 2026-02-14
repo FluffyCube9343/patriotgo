@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, View, Text, Platform, Dimensions } from 'react-native';
+import { StyleSheet, View, Text, Platform } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -8,6 +8,7 @@ import * as Haptics from 'expo-haptics';
 
 // --- SCREEN IMPORTS ---
 import LoginScreen from './screens/LoginScreen';
+import SignUpScreen from './screens/SignUpScreen'; // Added this
 import FeedScreen from './screens/FeedScreen';
 import ChatScreen from './screens/ChatScreen';
 import ProfileScreen from './screens/ProfileScreen';
@@ -22,9 +23,8 @@ function MainTabs() {
         headerShown: false,
         tabBarShowLabel: false,
         tabBarStyle: styles.floatingIsland,
-        tabBarActiveTintColor: '#FFCC33', // Mason Gold
+        tabBarActiveTintColor: '#FFCC33', 
         tabBarInactiveTintColor: 'rgba(255, 204, 51, 0.4)',
-        // Use the standard tabBarIcon for maximum stability
         tabBarIcon: ({ focused, color }) => {
           let iconName;
           let label;
@@ -90,6 +90,8 @@ export default function App() {
         }}
       >
         <Stack.Screen name="Login" component={LoginScreen} />
+        {/* Added SignUp Screen here */}
+        <Stack.Screen name="SignUp" component={SignUpScreen} /> 
         <Stack.Screen name="Main" component={MainTabs} />
       </Stack.Navigator>
     </NavigationContainer>
@@ -103,14 +105,14 @@ const styles = StyleSheet.create({
     left: 20,
     right: 20,
     height: 80,
-    backgroundColor: '#004D26', // Deep Patriot Green
+    backgroundColor: '#004D26', 
     borderRadius: 40,
     borderTopWidth: 0,
     shadowColor: '#000',
     shadowOpacity: 0.4,
     shadowRadius: 15,
     elevation: 15,
-    paddingBottom: Platform.OS === 'ios' ? 0 : 0,
+    paddingBottom: 0,
   },
   pill: {
     flexDirection: 'row',
@@ -119,11 +121,10 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 25,
-    // Add a slight transition feel
     minWidth: 50,
   },
   activePill: {
-    backgroundColor: '#FFCC33', // Mason Gold
+    backgroundColor: '#FFCC33', 
   },
   pillLabel: {
     marginLeft: 8,
