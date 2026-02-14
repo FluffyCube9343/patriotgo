@@ -1,11 +1,50 @@
-import React from 'react';
-import { StyleSheet, Text, View, Image, ScrollView, TouchableOpacity, SafeAreaView, Dimensions } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { 
+  StyleSheet, Text, View, Image, ScrollView, 
+  TouchableOpacity, SafeAreaView, Dimensions, ActivityIndicator 
+} from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { supabase } from '../lib/supabase'; // Connected to your lib/supabase.js
 
 const { width } = Dimensions.get('window');
 
 export default function ProfileScreen() {
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchProfile();
+  }, []);
+
+  const fetchProfile = async () => {
+    try {
+      setLoading(true);
+      // PULLS your saved Major and Car from the Supabase 'profiles' table
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (error) throw error;
+      setProfile(data);
+    } catch (error) {
+      console.log('Error fetching profile:', error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center' }]}>
+        <ActivityIndicator size="large" color="#006633" />
+      </View>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={{ paddingBottom: 140 }} showsVerticalScrollIndicator={false}>
@@ -13,15 +52,14 @@ export default function ProfileScreen() {
         {/* TOP NAV / BRANDING */}
         <View style={styles.nav}>
           <Text style={styles.urbanBrand}>PATRIOT<Text style={{color: '#FFCC33'}}>GO</Text></Text>
-          <TouchableOpacity style={styles.settingsBtn}>
-            <Ionicons name="cog-outline" size={24} color="#006633" />
+          <TouchableOpacity style={styles.settingsBtn} onPress={fetchProfile}>
+            <Ionicons name="refresh-outline" size={24} color="#006633" />
           </TouchableOpacity>
         </View>
 
-        {/* PROFILE HEADER - URBAN HERO STYLE */}
+        {/* PROFILE HEADER - DYNAMIC DATA LOADED HERE */}
         <View style={styles.heroSection}>
           <View style={styles.imageContainer}>
-             {/* Using your provided profile intent */}
             <Image 
               source={{ uri: 'https://i.pravatar.cc/300?u=saumit' }} 
               style={styles.profileImage} 
@@ -32,7 +70,10 @@ export default function ProfileScreen() {
           </View>
           
           <Text style={styles.userName}>SAUMIT GUDUGUNTLA</Text>
-          <Text style={styles.userTitle}>COMPUTER SCIENCE • GMU '28</Text>
+          {/* Dynamically loads Major and Grad Year from your database */}
+          <Text style={styles.userTitle}>
+            {profile?.major?.toUpperCase() || 'COMPUTER SCIENCE'} • GMU '{profile?.grad_year || '28'}
+          </Text>
         </View>
 
         {/* IMPACT BENTO GRID */}
@@ -54,7 +95,7 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* ABOUT SECTION - THE "JIST" FROM YOUR DRAWING */}
+        {/* ABOUT SECTION */}
         <View style={styles.section}>
           <Text style={styles.sectionHeader}>ABOUT</Text>
           <View style={styles.glassCard}>
@@ -65,12 +106,13 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* EXPERIENCE / DRIVER SETTINGS */}
+        {/* DRIVER SETTINGS - DYNAMIC VEHICLE DATA */}
         <View style={styles.section}>
           <Text style={styles.sectionHeader}>DRIVER SETTINGS</Text>
           <View style={styles.settingItem}>
-            <MaterialCommunityIcons name="car-electric" size={22} color="#006633" />
-            <Text style={styles.settingText}>Tesla Model 3</Text>
+            <MaterialCommunityIcons name="car-side" size={22} color="#006633" />
+            {/* Loads your Car Model from Supabase */}
+            <Text style={styles.settingText}>{profile?.car_model || 'Update Vehicle'}</Text>
             <Ionicons name="chevron-forward" size={18} color="#CCC" style={{marginLeft: 'auto'}} />
           </View>
           <View style={styles.settingItem}>
